@@ -3,21 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Irregular Verbs Trainer</title>
+    <title>Irregular Verbs Trainer Full</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .flip-card { background-color: transparent; perspective: 1000px; }
+        .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
+        .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+        .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; flex-direction: column; border-radius: 2rem; }
+        .flip-card-back { transform: rotateY(180deg); }
+    </style>
 </head>
 <body class="bg-slate-50 font-sans">
-
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // Данные из твоих скриншотов
         const initialVerbsData = [
           { v1: 'be', v2: 'was, were', v3: 'been', translate: 'бути' },
           { v1: 'become', v2: 'became', v3: 'become', translate: 'ставати' },
@@ -62,17 +67,30 @@
         ];
 
         function App() {
+            const [mode, setMode] = useState('menu');
             const [bestScore, setBestScore] = useState(0);
             const [totalSessions, setTotalSessions] = useState(0);
-            const [mode, setMode] = useState('menu');
+            
+            // Состояния для игр
+            const [currentVerbs, setCurrentVerbs] = useState([...initialVerbsData]);
+            const [currentIndex, setCurrentIndex] = useState(0);
             const [score, setScore] = useState(0);
-            const [timeLeft, setTimeLeft] = useState(60);
             const [feedback, setFeedback] = useState(null);
-            const [sprintPair, setSprintPair] = useState({ verb: null, shownForms: '', isCorrect: false });
+            const [isFlipped, setIsFlipped] = useState(false);
             const [quizFinished, setQuizFinished] = useState(false);
+            
+            // Для Спринта
+            const [timeLeft, setTimeLeft] = useState(60);
+            const [sprintPair, setSprintPair] = useState({ verb: null, shownForms: '', isCorrect: false });
             const timerRef = useRef(null);
 
-            // Локальная база данных (будет сохранять рекорды даже после перезагрузки!)
+            // Для Выбора (Multiple Choice)
+            const [options, setOptions] = useState([]);
+
+            // Для Письма (Quiz)
+            const [inputV2, setInputV2] = useState('');
+            const [inputV3, setInputV3] = useState('');
+
             useEffect(() => {
                 const savedBest = localStorage.getItem('bestScore');
                 const savedSessions = localStorage.getItem('totalSessions');
@@ -82,16 +100,12 @@
 
             const updateStats = (newScore) => {
                 const newBest = Math.max(bestScore, newScore);
-                const newSessions = totalSessions + 1;
                 setBestScore(newBest);
+                const newSessions = totalSessions + 1;
                 setTotalSessions(newSessions);
                 localStorage.setItem('bestScore', newBest);
                 localStorage.setItem('totalSessions', newSessions);
             };
-
-            const verbOfTheDay = useMemo(() => {
-                return initialVerbsData[Math.floor(Math.random() * initialVerbsData.length)];
-            }, []);
 
             const speak = (text) => {
                 const utterance = new SpeechSynthesisUtterance(text);
@@ -99,15 +113,14 @@
                 window.speechSynthesis.speak(utterance);
             };
 
-            const generateSprintPair = () => {
-                const randomVerb = initialVerbsData[Math.floor(Math.random() * initialVerbsData.length)];
-                const isCorrect = Math.random() > 0.5;
-                let shownForms = isCorrect ? `${randomVerb.v2} — ${randomVerb.v3}` : 
-                  (() => {
-                    const other = initialVerbsData[Math.floor(Math.random() * initialVerbsData.length)];
-                    return `${other.v2} — ${other.v3}`;
-                  })();
-                setSprintPair({ verb: randomVerb, shownForms, isCorrect });
+            const shuffle = (array) => [...array].sort(() => Math.random() - 0.5);
+
+            // --- Инициализация режимов ---
+            const startFlashcards = () => {
+                setCurrentVerbs(shuffle(initialVerbsData));
+                setCurrentIndex(0);
+                setIsFlipped(false);
+                setMode('flashcards');
             };
 
             const startSprint = () => {
@@ -115,43 +128,111 @@
                 setTimeLeft(60);
                 setQuizFinished(false);
                 setMode('sprint');
-                generateSprintPair();
-                
+                nextSprintStep();
                 timerRef.current = setInterval(() => {
-                  setTimeLeft((prev) => {
-                    if (prev <= 1) {
-                      clearInterval(timerRef.current);
-                      return 0;
-                    }
-                    return prev - 1;
-                  });
+                    setTimeLeft((p) => (p <= 1 ? (clearInterval(timerRef.current), 0) : p - 1));
                 }, 1000);
             };
 
-            useEffect(() => {
-                if (timeLeft === 0 && mode === 'sprint' && !quizFinished) {
-                    setQuizFinished(true);
-                    updateStats(score);
-                }
-            }, [timeLeft]);
+            const startMultipleChoice = () => {
+                const shuffled = shuffle(initialVerbsData);
+                setCurrentVerbs(shuffled);
+                setCurrentIndex(0);
+                setScore(0);
+                setQuizFinished(false);
+                setMode('multiple-choice');
+                generateOptions(shuffled[0]);
+            };
 
-            const handleSprintAnswer = (answer) => {
-                let currentScore = score;
-                if (answer === sprintPair.isCorrect) {
-                  currentScore = score + 1;
-                  setScore(currentScore);
-                  setFeedback('correct');
+            const startQuiz = () => {
+                setCurrentVerbs(shuffle(initialVerbsData));
+                setCurrentIndex(0);
+                setScore(0);
+                setQuizFinished(false);
+                setInputV2('');
+                setInputV3('');
+                setMode('quiz');
+            };
+
+            // --- Логика Спринта ---
+            const nextSprintStep = () => {
+                const randomVerb = initialVerbsData[Math.floor(Math.random() * initialVerbsData.length)];
+                const isCorrect = Math.random() > 0.5;
+                let shown;
+                if (isCorrect) {
+                    shown = `${randomVerb.v2} — ${randomVerb.v3}`;
                 } else {
-                  setFeedback('wrong');
+                    const other = initialVerbsData[Math.floor(Math.random() * initialVerbsData.length)];
+                    shown = `${other.v2} — ${other.v3}`;
                 }
+                setSprintPair({ verb: randomVerb, shownForms: shown, isCorrect });
+            };
+
+            const handleSprintAnswer = (ans) => {
+                if (ans === sprintPair.isCorrect) {
+                    setScore(s => s + 1);
+                    setFeedback('correct');
+                } else setFeedback('wrong');
                 setTimeout(() => {
-                  setFeedback(null);
-                  if (timeLeft > 0) generateSprintPair();
-                  else {
-                    setQuizFinished(true);
-                    updateStats(currentScore);
-                  }
+                    setFeedback(null);
+                    if (timeLeft > 0) nextSprintStep();
+                    else { setQuizFinished(true); updateStats(score); }
                 }, 200);
+            };
+
+            // --- Логика Выбора ---
+            const generateOptions = (correctVerb) => {
+                const correctStr = `${correctVerb.v2}, ${correctVerb.v3}`;
+                let others = initialVerbsData
+                    .filter(v => v.v1 !== correctVerb.v1)
+                    .map(v => `${v.v2}, ${v.v3}`);
+                const pickedOthers = shuffle(others).slice(0, 3);
+                setOptions(shuffle([correctStr, ...pickedOthers]));
+            };
+
+            const handleChoice = (option) => {
+                const correct = `${currentVerbs[currentIndex].v2}, ${currentVerbs[currentIndex].v3}`;
+                if (option === correct) {
+                    setScore(s => s + 1);
+                    setFeedback('correct');
+                } else setFeedback('wrong');
+
+                setTimeout(() => {
+                    setFeedback(null);
+                    if (currentIndex < 19) {
+                        setCurrentIndex(currentIndex + 1);
+                        generateOptions(currentVerbs[currentIndex + 1]);
+                    } else {
+                        setQuizFinished(true);
+                        updateStats(score + (option === correct ? 1 : 0));
+                    }
+                }, 400);
+            };
+
+            // --- Логика Письма ---
+            const handleQuizSubmit = () => {
+                const verb = currentVerbs[currentIndex];
+                // Очистка от пробелов и приведение к нижнему регистру
+                const clean = (s) => s.toLowerCase().trim();
+                const isV2Correct = verb.v2.split('/').some(v => clean(v) === clean(inputV2));
+                const isV3Correct = verb.v3.split('/').some(v => clean(v) === clean(inputV3));
+
+                if (isV2Correct && isV3Correct) {
+                    setScore(s => s + 1);
+                    setFeedback('correct');
+                } else setFeedback('wrong');
+
+                setTimeout(() => {
+                    setFeedback(null);
+                    setInputV2('');
+                    setInputV3('');
+                    if (currentIndex < 19) {
+                        setCurrentIndex(currentIndex + 1);
+                    } else {
+                        setQuizFinished(true);
+                        updateStats(score + (isV2Correct && isV3Correct ? 1 : 0));
+                    }
+                }, 600);
             };
 
             const resetToMenu = () => {
@@ -162,89 +243,148 @@
             };
 
             return (
-                <div className={`min-h-screen p-4 flex flex-col items-center transition-colors duration-200 ${feedback === 'correct' ? 'bg-green-500' : feedback === 'wrong' ? 'bg-red-500' : 'bg-slate-50'}`}>
+                <div className={`min-h-screen p-4 flex flex-col items-center transition-all ${feedback === 'correct' ? 'bg-green-500' : feedback === 'wrong' ? 'bg-red-500' : 'bg-slate-50'}`}>
                     <div className="w-full max-w-xl mt-6">
+                        
+                        {/* Header */}
                         <header className="flex justify-between items-center mb-8">
-                           <div>
+                           <div onClick={resetToMenu} className="cursor-pointer">
                               <h1 className={`text-2xl font-black ${feedback ? 'text-white' : 'text-slate-900'}`}>Irregular Verbs</h1>
-                              <p className={`text-[10px] font-bold uppercase tracking-widest ${feedback ? 'text-white/60' : 'text-slate-400'}`}>База данных активна</p>
+                              <p className={`text-[10px] font-bold uppercase tracking-widest ${feedback ? 'text-white/60' : 'text-slate-400'}`}>Full Trainer App</p>
                            </div>
-                           {bestScore > 0 && (
-                             <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/30 text-white font-bold text-sm flex items-center gap-2 shadow-sm">
-                                <i className="fa-solid fa-trophy text-yellow-300"></i> Рекорд: {bestScore}
-                             </div>
-                           )}
+                           <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/30 text-white font-bold text-sm flex items-center gap-2">
+                                <i className="fa-solid fa-trophy text-yellow-300"></i> {bestScore}
+                           </div>
                         </header>
 
+                        {/* MENU */}
                         {mode === 'menu' && (
-                          <div className="space-y-4">
-                            <div className="bg-indigo-600 text-white rounded-[2rem] border-none shadow-xl overflow-hidden p-6">
-                               <div className="flex justify-between items-start mb-4">
-                                  <span className="text-[10px] font-black uppercase tracking-widest bg-black/20 px-3 py-1 rounded-full">Слово дня</span>
-                                  <i className="fa-solid fa-lightbulb text-yellow-300"></i>
-                               </div>
-                               <h2 className="text-4xl font-black mb-1">{verbOfTheDay.v1}</h2>
-                               <p className="opacity-80 italic font-medium mb-4">{verbOfTheDay.v2} / {verbOfTheDay.v3}</p>
-                               <div className="flex justify-between items-center">
-                                  <p className="font-bold">{verbOfTheDay.translate}</p>
-                                  <button className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition" onClick={() => speak(verbOfTheDay.v1)}>
-                                      <i className="fa-solid fa-volume-high"></i>
-                                  </button>
-                               </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                               <div className="p-6 rounded-[2rem] border-2 border-transparent hover:border-slate-200 bg-white shadow-sm cursor-pointer text-center group" onClick={startSprint}>
-                                  <i className="fa-solid fa-bolt text-orange-500 text-3xl mb-2 group-hover:scale-110 transition"></i>
-                                  <span className="font-black text-slate-800 uppercase text-xs block">Быстрый Спринт</span>
-                               </div>
-                               <div className="p-6 rounded-[2rem] bg-white border border-slate-100 text-center">
-                                  <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Всего сессий</p>
-                                  <p className="text-xl font-black text-slate-800">{totalSessions}</p>
-                               </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {mode === 'sprint' && !quizFinished && (
-                          <div className="space-y-6 text-center">
-                             <div className="flex justify-between items-center bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
-                                <button className="text-slate-600 hover:text-slate-900 font-bold" onClick={resetToMenu}><i className="fa-solid fa-house mr-2"></i> Меню</button>
-                                <div className="text-2xl font-black text-orange-500 flex items-center gap-2"><i className="fa-solid fa-bolt"></i> {timeLeft}s</div>
-                                <div className="font-black text-slate-400">Score: {score}</div>
-                             </div>
-
-                             <div className="p-12 rounded-[3rem] shadow-2xl bg-white border-b-8 border-orange-100">
-                                <p className="text-slate-300 font-black uppercase text-xs mb-2 italic">{sprintPair.verb?.v1}</p>
-                                <h3 className="text-5xl font-black text-slate-800 mb-8">{sprintPair.verb?.translate}</h3>
-                                <div className="h-px bg-slate-100 w-24 mx-auto mb-8"></div>
-                                <p className="text-3xl font-black text-indigo-600">{sprintPair.shownForms}</p>
+                          <div className="grid grid-cols-1 gap-4 animate-in fade-in zoom-in duration-300">
+                             <div className="bg-indigo-600 text-white rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group">
+                                <div className="relative z-10">
+                                   <span className="text-[10px] font-black uppercase tracking-widest bg-black/20 px-3 py-1 rounded-full">Слово дня</span>
+                                   <h2 className="text-5xl font-black mt-4 mb-1">{initialVerbsData[0].v1}</h2>
+                                   <p className="opacity-70 italic mb-6">{initialVerbsData[0].translate}</p>
+                                   <button onClick={startFlashcards} className="bg-white text-indigo-600 px-6 py-3 rounded-2xl font-black text-sm hover:scale-105 transition">УЧИТЬ СЕЙЧАС</button>
+                                </div>
+                                <i className="fa-solid fa-brain absolute -right-4 -bottom-4 text-9xl opacity-10 group-hover:rotate-12 transition-transform"></i>
                              </div>
 
                              <div className="grid grid-cols-2 gap-4">
-                                <button className="h-20 rounded-3xl text-2xl font-black bg-red-500 hover:bg-red-600 text-white shadow-xl flex items-center justify-center disabled:opacity-50" onClick={() => handleSprintAnswer(false)} disabled={feedback !== null}>
-                                    <i className="fa-solid fa-xmark text-3xl"></i>
-                                </button>
-                                <button className="h-20 rounded-3xl text-2xl font-black bg-green-500 hover:bg-green-600 text-white shadow-xl flex items-center justify-center disabled:opacity-50" onClick={() => handleSprintAnswer(true)} disabled={feedback !== null}>
-                                    <i className="fa-solid fa-check text-3xl"></i>
-                                </button>
+                                <MenuBtn icon="fa-clone" color="text-blue-500" label="Карточки" sub="Заучивание" onClick={startFlashcards} />
+                                <MenuBtn icon="fa-bolt" color="text-orange-500" label="Спринт" sub="На время" onClick={startSprint} />
+                                <MenuBtn icon="fa-list-ul" color="text-purple-500" label="Выбор" sub="Тест 20 слов" onClick={startMultipleChoice} />
+                                <MenuBtn icon="fa-pen-clip" color="text-green-500" label="Письмо" sub="Профи" onClick={startQuiz} />
                              </div>
                           </div>
                         )}
 
+                        {/* FLASHCARDS */}
+                        {mode === 'flashcards' && (
+                            <div className="space-y-6 text-center animate-in slide-in-from-right duration-300">
+                                <div className="flex justify-between items-center bg-white p-4 rounded-3xl shadow-sm">
+                                    <button onClick={resetToMenu}><i className="fa-solid fa-house"></i></button>
+                                    <span className="font-black text-slate-400">{currentIndex + 1} / {currentVerbs.length}</span>
+                                    <button onClick={() => speak(currentVerbs[currentIndex].v1)}><i className="fa-solid fa-volume-high"></i></button>
+                                </div>
+                                <div className={`flip-card w-full h-80 ${isFlipped ? 'flipped' : ''}`} onClick={() => setIsFlipped(!isFlipped)}>
+                                    <div className="flip-card-inner">
+                                        <div className="flip-card-front bg-white shadow-xl border-b-8 border-indigo-100">
+                                            <h3 className="text-6xl font-black text-slate-800">{currentVerbs[currentIndex].v1}</h3>
+                                            <p className="text-slate-400 mt-4 uppercase tracking-widest font-bold text-xs">Нажми, чтобы перевернуть</p>
+                                        </div>
+                                        <div className="flip-card-back bg-indigo-600 text-white shadow-xl">
+                                            <p className="text-3xl font-black mb-2">{currentVerbs[currentIndex].v2}</p>
+                                            <p className="text-3xl font-black mb-6">{currentVerbs[currentIndex].v3}</p>
+                                            <div className="h-px w-12 bg-white/30 mb-6"></div>
+                                            <p className="text-xl font-medium opacity-90">{currentVerbs[currentIndex].translate}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex gap-4">
+                                    <button className="flex-1 bg-slate-200 h-16 rounded-2xl font-bold" onClick={() => { setIsFlipped(false); setCurrentIndex(p => Math.max(0, p-1)) }}>Назад</button>
+                                    <button className="flex-1 bg-slate-900 text-white h-16 rounded-2xl font-bold" onClick={() => { setIsFlipped(false); setCurrentIndex(p => Math.min(currentVerbs.length-1, p+1)) }}>Далее</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* MULTIPLE CHOICE */}
+                        {mode === 'multiple-choice' && !quizFinished && (
+                            <div className="space-y-6 animate-in fade-in duration-300">
+                                <div className="bg-white p-6 rounded-[2.5rem] shadow-xl text-center border-b-8 border-purple-100">
+                                    <span className="text-purple-500 font-black text-xs uppercase tracking-widest">Как переводятся формы V2 и V3?</span>
+                                    <h2 className="text-5xl font-black text-slate-800 my-4">{currentVerbs[currentIndex].v1}</h2>
+                                    <p className="text-slate-400 font-medium italic">{currentVerbs[currentIndex].translate}</p>
+                                </div>
+                                <div className="grid grid-cols-1 gap-3">
+                                    {options.map((opt, i) => (
+                                        <button key={i} onClick={() => handleChoice(opt)} className="bg-white p-6 rounded-2xl font-bold text-slate-700 shadow-sm hover:shadow-md hover:bg-slate-50 transition text-left flex justify-between items-center group">
+                                            {opt}
+                                            <i className="fa-solid fa-chevron-right opacity-0 group-hover:opacity-100 transition"></i>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* SPRINT */}
+                        {mode === 'sprint' && !quizFinished && (
+                            <div className="space-y-6 text-center animate-in zoom-in duration-300">
+                                <div className="flex justify-between items-center bg-white p-4 rounded-3xl shadow-sm">
+                                    <div className="text-orange-500 font-black text-2xl"><i className="fa-solid fa-bolt"></i> {timeLeft}s</div>
+                                    <div className="font-black text-slate-800 text-xl">Счёт: {score}</div>
+                                </div>
+                                <div className="bg-white p-12 rounded-[3rem] shadow-2xl border-b-8 border-orange-100">
+                                    <h3 className="text-5xl font-black text-slate-800 mb-4">{sprintPair.verb?.v1}</h3>
+                                    <p className="text-slate-400 mb-8 italic">{sprintPair.verb?.translate}</p>
+                                    <p className="text-3xl font-black text-indigo-600 bg-indigo-50 py-4 rounded-2xl">{sprintPair.shownForms}</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button onClick={() => handleSprintAnswer(false)} className="h-24 rounded-[2rem] bg-red-500 text-white text-4xl shadow-lg"><i className="fa-solid fa-xmark"></i></button>
+                                    <button onClick={() => handleSprintAnswer(true)} className="h-24 rounded-[2rem] bg-green-500 text-white text-4xl shadow-lg"><i className="fa-solid fa-check"></i></button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* QUIZ (WRITING) */}
+                        {mode === 'quiz' && !quizFinished && (
+                            <div className="space-y-4 animate-in slide-in-from-bottom duration-300">
+                                <div className="bg-white p-8 rounded-[2.5rem] shadow-xl text-center">
+                                    <h2 className="text-5xl font-black text-slate-800 mb-2">{currentVerbs[currentIndex].v1}</h2>
+                                    <p className="text-slate-400 italic">{currentVerbs[currentIndex].translate}</p>
+                                </div>
+                                <div className="space-y-3">
+                                    <input value={inputV2} onChange={e => setInputV2(e.target.value)} placeholder="Вторая форма (V2)" className="w-full h-16 px-6 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 outline-none font-bold text-lg transition" />
+                                    <input value={inputV3} onChange={e => setInputV3(e.target.value)} placeholder="Третья форма (V3)" className="w-full h-16 px-6 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 outline-none font-bold text-lg transition" />
+                                    <button onClick={handleQuizSubmit} className="w-full h-16 bg-slate-900 text-white rounded-2xl font-black text-xl">ПРОВЕРИТЬ</button>
+                                </div>
+                                <p className="text-center text-slate-400 font-bold text-xs uppercase tracking-widest mt-4">Слово {currentIndex+1} из 20</p>
+                            </div>
+                        )}
+
+                        {/* FINISH SCREEN */}
                         {quizFinished && (
-                           <div className="p-12 text-center rounded-[3rem] shadow-2xl bg-white border-t-8 border-green-400">
-                              <i className="fa-solid fa-circle-check text-green-500 text-7xl mb-6"></i>
-                              <h2 className="text-4xl font-black text-slate-800 mb-2">ГОТОВО!</h2>
-                              <p className="text-slate-400 font-bold uppercase tracking-widest text-xs mb-8">Твой результат</p>
-                              <div className="text-8xl font-black text-slate-800 mb-10">{score}</div>
-                              <button className="w-full h-16 rounded-2xl bg-slate-900 text-white font-bold text-xl hover:bg-slate-800 transition" onClick={resetToMenu}>ВЕРНУТЬСЯ В МЕНЮ</button>
+                           <div className="p-12 text-center rounded-[3rem] shadow-2xl bg-white border-t-8 border-green-400 animate-in zoom-in duration-500">
+                              <i className="fa-solid fa-circle-check text-green-500 text-8xl mb-6"></i>
+                              <h2 className="text-4xl font-black text-slate-800 mb-2">ОТЛИЧНО!</h2>
+                              <p className="text-slate-400 font-bold uppercase tracking-widest text-xs mb-8">Твой результат в режиме {mode}</p>
+                              <div className="text-9xl font-black text-slate-900 mb-10">{score}</div>
+                              <button onClick={resetToMenu} className="w-full h-16 rounded-2xl bg-indigo-600 text-white font-black text-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">В МЕНЮ</button>
                            </div>
                         )}
+
                     </div>
                 </div>
             );
         }
+
+        const MenuBtn = ({ icon, color, label, sub, onClick }) => (
+            <div onClick={onClick} className="bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-xl cursor-pointer transition-all border-2 border-transparent hover:border-slate-100 group">
+                <i className={`fa-solid ${icon} ${color} text-3xl mb-3 group-hover:scale-110 transition-transform`}></i>
+                <h4 className="font-black text-slate-800 text-sm uppercase leading-none">{label}</h4>
+                <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">{sub}</p>
+            </div>
+        );
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
