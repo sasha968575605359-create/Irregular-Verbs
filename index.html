@@ -3,509 +3,470 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Irregular Verbs Ultra Trainer</title>
+    <title>Интерактивный справочник неправильных глаголов</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap');
-        body { font-family: 'Manrope', sans-serif; overflow-x: hidden; }
-        .flip-card { perspective: 1000px; }
-        .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; cursor: pointer; }
-        .flipped .flip-card-inner { transform: rotateY(180deg); }
-        .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 2rem; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 2rem; }
-        .flip-card-back { transform: rotateY(180deg); }
-        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); }
-        .letter-btn:disabled { opacity: 0.2; cursor: not-allowed; }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+        body {
+            background-color: #fdfbf7;
+            color: #334155;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .wrong-shake { animation: shake 0.2s ease-in-out 0s 2; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 35vh;
+            max-height: 350px;
+        }
+        .flashcard-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+        .flashcard-front, .flashcard-back {
+            backface-visibility: hidden;
+        }
+        .flashcard-back {
+            transform: rotateY(180deg);
+        }
     </style>
 </head>
-<body class="bg-[#F8FAFC] text-slate-900">
-    <div id="root"></div>
+<body class="min-h-screen">
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback } = React;
+<!-- Chosen Palette: Warm Neutrals (Background: #fdfbf7, Text: #334155, Accent: #d97706, Secondary: #e2e8f0) -->
+<!-- Application Structure Plan: The SPA is divided into three functional views controlled by a tab navigation to avoid overwhelming the user. 1. 'Аналитика' (Analytics): Uses Chart.js to provide a high-level overview of verb forms, helping users understand patterns before memorizing. 2. 'Справочник' (Directory): An interactive, searchable table for quick lookup and reference, allowing users to filter by any form or Russian translation. 3. 'Тренировка' (Practice): An interactive flashcard system designed for active recall and engagement. This structure transitions the user from understanding -> referencing -> active learning. -->
+<!-- Visualization & Content Choices: 1. Donut Chart (Chart.js) -> Goal: Inform/Organize -> Shows the distribution of verb morphological patterns (all forms different, two forms same, all same). Justification: Helps identify easier groups to learn first. 2. Interactive Table (HTML/JS) -> Goal: Organize/Search -> Presents the raw report data in a highly accessible way. 3. Flashcards (HTML/CSS 3D Transforms/JS) -> Goal: Engagement/Change -> Fosters active learning instead of passive reading. NO SVG/Mermaid used; pure CSS shapes and Unicode icons used. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
-        const VERBS = [
-            { v1: 'be', v2: 'was, were', v3: 'been', translate: 'бути' },
-            { v1: 'become', v2: 'became', v3: 'become', translate: 'ставати' },
-            { v1: 'begin', v2: 'began', v3: 'begun', translate: 'починати' },
-            { v1: 'break', v2: 'broke', v3: 'broken', translate: 'ламати' },
-            { v1: 'bring', v2: 'brought', v3: 'brought', translate: 'приносити' },
-            { v1: 'build', v2: 'built', v3: 'built', translate: 'будувати' },
-            { v1: 'burn', v2: 'burnt', v3: 'burnt', translate: 'горіти, палити' },
-            { v1: 'buy', v2: 'bought', v3: 'bought', translate: 'купувати' },
-            { v1: 'catch', v2: 'caught', v3: 'caught', translate: 'ловити' },
-            { v1: 'choose', v2: 'chose', v3: 'chosen', translate: 'вибирати' },
-            { v1: 'come', v2: 'came', v3: 'come', translate: 'приходити' },
-            { v1: 'cost', v2: 'cost', v3: 'cost', translate: 'коштувати' },
-            { v1: 'cut', v2: 'cut', v3: 'cut', translate: 'різати' },
-            { v1: 'do', v2: 'did', v3: 'done', translate: 'робити' },
-            { v1: 'draw', v2: 'drew', v3: 'drawn', translate: 'малювати, тягти' },
-            { v1: 'dream', v2: 'dreamt', v3: 'dreamt', translate: 'мріяти, снитися' },
-            { v1: 'drink', v2: 'drank', v3: 'drunk', translate: 'пити' },
-            { v1: 'drive', v2: 'drove', v3: 'driven', translate: 'водити (авто)' },
-            { v1: 'eat', v2: 'ate', v3: 'eaten', translate: 'їсти' },
-            { v1: 'fall', v2: 'fell', v3: 'fallen', translate: 'падати, опадати' },
-            { v1: 'find', v2: 'found', v3: 'found', translate: 'знаходити' },
-            { v1: 'fly', v2: 'flew', v3: 'flown', translate: 'літати' },
-            { v1: 'forget', v2: 'forgot', v3: 'forgotten', translate: 'забувати' },
-            { v1: 'get', v2: 'got', v3: 'got', translate: 'отримувати, ставати' },
-            { v1: 'give', v2: 'gave', v3: 'given', translate: 'давати' },
-            { v1: 'go', v2: 'went', v3: 'gone', translate: 'йти, їхати' },
-            { v1: 'grow', v2: 'grew', v3: 'grown', translate: 'рости, вирощувати' },
-            { v1: 'have', v2: 'had', v3: 'had', translate: 'мати' },
-            { v1: 'hear', v2: 'heard', v3: 'heard', translate: 'чути' },
-            { v1: 'hit', v2: 'hit', v3: 'hit', translate: 'вдаряти, влучати' },
-            { v1: 'hold', v2: 'held', v3: 'held', translate: 'тримати' },
-            { v1: 'hurt', v2: 'hurt', v3: 'hurt', translate: 'боліти, завдавати болю' },
-            { v1: 'keep', v2: 'kept', v3: 'kept', translate: 'тримати, зберігати' },
-            { v1: 'know', v2: 'knew', v3: 'known', translate: 'знати' },
-            { v1: 'learn', v2: 'learnt', v3: 'learnt', translate: 'вчити(ся)' },
-            { v1: 'leave', v2: 'left', v3: 'left', translate: 'залишати, покидати' },
-            { v1: 'lend', v2: 'lent', v3: 'lent', translate: 'позичати' },
-            { v1: 'lie', v2: 'lay', v3: 'lain', translate: 'лежати' },
-            { v1: 'lose', v2: 'lost', v3: 'lost', translate: 'втрачати' },
-            { v1: 'make', v2: 'made', v3: 'made', translate: 'робити' }
-        ];
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl font-bold text-amber-700 mb-4">📘 Неправильные глаголы английского языка</h1>
+            <p class="text-lg text-slate-600 max-w-3xl mx-auto">
+                Этот интерактивный инструмент поможет вам изучить, проанализировать и запомнить основные неправильные глаголы. 
+                Используйте вкладки ниже для переключения между режимом аналитики, полным справочником и интерактивными карточками для тренировки.
+            </p>
+        </header>
 
-        const HangmanDrawing = ({ mistakes }) => {
-            return (
-                <svg width="120" height="150" viewBox="0 0 120 150" className="mx-auto mb-4">
-                    {/* Виселица */}
-                    <line x1="10" y1="140" x2="110" y2="140" stroke="black" strokeWidth="3" />
-                    <line x1="30" y1="140" x2="30" y2="10" stroke="black" strokeWidth="3" />
-                    <line x1="30" y1="10" x2="80" y2="10" stroke="black" strokeWidth="3" />
-                    <line x1="80" y1="10" x2="80" y2="30" stroke="black" strokeWidth="3" />
-                    
-                    {/* Челик */}
-                    {mistakes >= 1 && <circle cx="80" cy="40" r="10" stroke="black" strokeWidth="2" fill="none" />} {/* Голова */}
-                    {mistakes >= 2 && <line x1="80" y1="50" x2="80" y2="90" stroke="black" strokeWidth="2" />} {/* Туловище */}
-                    {mistakes >= 3 && <line x1="80" y1="60" x2="60" y2="80" stroke="black" strokeWidth="2" />} {/* Лев. рука */}
-                    {mistakes >= 4 && <line x1="80" y1="60" x2="100" y2="80" stroke="black" strokeWidth="2" />} {/* Пр. рука */}
-                    {mistakes >= 5 && <line x1="80" y1="90" x2="65" y2="120" stroke="black" strokeWidth="2" />} {/* Лев. нога */}
-                    {mistakes >= 6 && <line x1="80" y1="90" x2="95" y2="120" stroke="black" strokeWidth="2" />} {/* Пр. нога */}
-                </svg>
-            );
-        };
+        <nav class="flex justify-center mb-8 border-b border-slate-300">
+            <button id="btn-tab-analytics" class="px-6 py-3 font-semibold text-amber-700 border-b-2 border-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors">📊 Аналитика</button>
+            <button id="btn-tab-table" class="px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-amber-700 hover:bg-amber-50 transition-colors">🔍 Справочник</button>
+            <button id="btn-tab-practice" class="px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-amber-700 hover:bg-amber-50 transition-colors">🎓 Тренировка</button>
+        </nav>
 
-        function App() {
-            const [mode, setMode] = useState('menu');
-            const [xp, setXp] = useState(0);
-            const [bestScore, setBestScore] = useState(0);
-            const level = Math.floor(xp / 100) + 1;
-
-            const [currentVerbs, setCurrentVerbs] = useState([]);
-            const [idx, setIdx] = useState(0);
-            const [score, setScore] = useState(0);
-            const [feedback, setFeedback] = useState(null);
-            const [quizFinished, setQuizFinished] = useState(false);
-            const [isFlipped, setIsFlipped] = useState(false);
-            
-            const [timeLeft, setTimeLeft] = useState(0);
-            const [sprintItem, setSprintItem] = useState(null);
-            const [options, setOptions] = useState([]);
-            const [inputs, setInputs] = useState({ v2: '', v3: '' });
-            const timerRef = useRef(null);
-
-            // Hangman
-            const [hangmanWord, setHangmanWord] = useState('');
-            const [guessedLetters, setGuessedLetters] = useState([]);
-            const [wrongCount, setWrongCount] = useState(0);
-
-            useEffect(() => {
-                setXp(parseInt(localStorage.getItem('verb_xp')) || 0);
-                setBestScore(parseInt(localStorage.getItem('bestScore')) || 0);
-            }, []);
-
-            const addXp = (amount) => {
-                const newXp = xp + amount;
-                setXp(newXp);
-                localStorage.setItem('verb_xp', newXp);
-            };
-
-            const speakVerb = useCallback((verb) => {
-                if (!verb) return;
-                window.speechSynthesis.cancel();
-                // Читаем все три формы
-                const text = `${verb.v1}, ${verb.v2}, ${verb.v3}`;
-                const u = new SpeechSynthesisUtterance(text);
-                u.lang = 'en-US';
-                u.rate = 0.85;
-                window.speechSynthesis.speak(u);
-            }, []);
-
-            const shuffle = (a) => [...a].sort(() => Math.random() - 0.5);
-
-            // Карточки: Навигация и клавиатура
-            const nextCard = useCallback(() => {
-                setIsFlipped(false);
-                setTimeout(() => {
-                    setIdx(p => {
-                        const next = Math.min(currentVerbs.length - 1, p + 1);
-                        return next;
-                    });
-                }, 100);
-            }, [currentVerbs]);
-
-            const prevCard = useCallback(() => {
-                setIsFlipped(false);
-                setTimeout(() => {
-                    setIdx(p => Math.max(0, p - 1));
-                }, 100);
-            }, []);
-
-            useEffect(() => {
-                const handleKeyDown = (e) => {
-                    if (mode !== 'cards' || quizFinished) return;
-                    if (e.code === 'Space') {
-                        e.preventDefault();
-                        setIsFlipped(p => !p);
-                    } else if (e.code === 'ArrowRight') {
-                        nextCard();
-                    } else if (e.code === 'ArrowLeft') {
-                        prevCard();
-                    }
-                };
-                window.addEventListener('keydown', handleKeyDown);
-                return () => window.removeEventListener('keydown', handleKeyDown);
-            }, [mode, quizFinished, nextCard, prevCard]);
-
-            useEffect(() => {
-                if (isFlipped && mode === 'cards') {
-                    speakVerb(currentVerbs[idx]);
-                }
-            }, [isFlipped, idx, mode, currentVerbs, speakVerb]);
-
-            // Режимы
-            const startFlashcards = () => {
-                setCurrentVerbs(shuffle(VERBS));
-                setIdx(0); setIsFlipped(false); setMode('cards');
-            };
-
-            const startHangman = () => {
-                const shuffled = shuffle(VERBS);
-                setCurrentVerbs(shuffled);
-                setIdx(0); setScore(0); setQuizFinished(false);
-                setMode('hangman');
-                initHangman(shuffled[0]);
-            };
-
-            const initHangman = (verb) => {
-                setHangmanWord(verb.v1.toLowerCase());
-                setGuessedLetters([]);
-                setWrongCount(0);
-            };
-
-            const handleHangmanGuess = (letter) => {
-                if (guessedLetters.includes(letter) || wrongCount >= 6) return;
-                const newGuessed = [...guessedLetters, letter];
-                setGuessedLetters(newGuessed);
-
-                if (!hangmanWord.includes(letter)) {
-                    setWrongCount(p => p + 1);
-                    if (wrongCount + 1 >= 6) {
-                        setFeedback('wrong');
-                        setTimeout(() => {
-                            setFeedback(null);
-                            nextHangman();
-                        }, 1500);
-                    }
-                } else {
-                    if (hangmanWord.split('').every(l => newGuessed.includes(l))) {
-                        setScore(s => s + 1); setFeedback('correct'); addXp(15);
-                        speakVerb(currentVerbs[idx]);
-                        setTimeout(() => {
-                            setFeedback(null);
-                            nextHangman();
-                        }, 1500);
-                    }
-                }
-            };
-
-            const nextHangman = () => {
-                if (idx < currentVerbs.length - 1) {
-                    const next = idx + 1;
-                    setIdx(next);
-                    initHangman(currentVerbs[next]);
-                } else setQuizFinished(true);
-            };
-
-            const startChoice = () => {
-                const shuffled = shuffle(VERBS).slice(0, 20);
-                setCurrentVerbs(shuffled);
-                setIdx(0); setScore(0); setQuizFinished(false);
-                setMode('choice'); genOptions(shuffled[0]);
-            };
-
-            const genOptions = (correct) => {
-                const right = `${correct.v2}, ${correct.v3}`;
-                const wrongs = shuffle(VERBS.filter(v => v.v1 !== correct.v1))
-                    .slice(0, 3).map(v => `${v.v2}, ${v.v3}`);
-                setOptions(shuffle([right, ...wrongs]));
-            };
-
-            const handleChoice = (opt) => {
-                const correct = `${currentVerbs[idx].v2}, ${currentVerbs[idx].v3}`;
-                if(opt === correct) {
-                    setScore(s => s + 1); setFeedback('correct'); addXp(10);
-                    speakVerb(currentVerbs[idx]);
-                } else setFeedback('wrong');
-
-                setTimeout(() => {
-                    setFeedback(null);
-                    if(idx < currentVerbs.length - 1) {
-                        setIdx(idx + 1); genOptions(currentVerbs[idx + 1]);
-                    } else setQuizFinished(true);
-                }, 1000);
-            };
-
-            const startSprint = () => {
-                setScore(0); setTimeLeft(60); setQuizFinished(false);
-                setMode('sprint'); genSprint();
-                timerRef.current = setInterval(() => setTimeLeft(p => {
-                    if(p <= 1) { clearInterval(timerRef.current); return 0; }
-                    return p - 1;
-                }), 1000);
-            };
-
-            const genSprint = () => {
-                const v = VERBS[Math.floor(Math.random()*VERBS.length)];
-                const isOk = Math.random() > 0.5;
-                const display = isOk ? `${v.v2} — ${v.v3}` : (() => {
-                    const o = VERBS[Math.floor(Math.random()*VERBS.length)];
-                    return `${o.v2} — ${o.v3}`;
-                })();
-                setSprintItem({ v, display, isOk });
-            };
-
-            const handleSprint = (ans) => {
-                if(ans === sprintItem.isOk) {
-                    setScore(s => s + 1); setFeedback('correct'); addXp(5);
-                } else setFeedback('wrong');
-                setTimeout(() => {
-                    setFeedback(null);
-                    if(timeLeft > 0) genSprint(); else setQuizFinished(true);
-                }, 300);
-            };
-
-            const startWriting = () => {
-                setCurrentVerbs(shuffle(VERBS).slice(0, 15));
-                setIdx(0); setScore(0); setQuizFinished(false);
-                setInputs({ v2: '', v3: '' }); setMode('writing');
-            };
-
-            const handleWrite = () => {
-                const v = currentVerbs[idx];
-                const check = (u, r) => r.split('/').some(x => x.trim().toLowerCase() === u.trim().toLowerCase());
-                if(check(inputs.v2, v.v2) && check(inputs.v3, v.v3)) {
-                    setScore(s => s + 1); setFeedback('correct'); addXp(25);
-                    speakVerb(v);
-                } else setFeedback('wrong');
-
-                setTimeout(() => {
-                    setFeedback(null); setInputs({ v2: '', v3: '' });
-                    if(idx < currentVerbs.length - 1) setIdx(idx + 1); else setQuizFinished(true);
-                }, 1200);
-            };
-
-            const endSession = () => {
-                if(score > bestScore) { setBestScore(score); localStorage.setItem('bestScore', score); }
-                clearInterval(timerRef.current);
-                setMode('menu'); setQuizFinished(false);
-            };
-
-            return (
-                <div className={`min-h-screen transition-all duration-300 ${feedback === 'correct' ? 'bg-green-100' : feedback === 'wrong' ? 'bg-red-100' : 'bg-[#F8FAFC]'}`}>
-                    <div className="max-w-xl mx-auto px-4 py-8">
-                        
-                        <header className="flex justify-between items-center mb-8">
-                            <div className="cursor-pointer" onClick={endSession}>
-                                <h1 className="text-2xl font-black text-indigo-600">VERB.PRO</h1>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hardcore Edition</p>
+        <main>
+            <section id="sec-analytics" class="block animate-fade-in">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Структура неправильных глаголов</h2>
+                    <p class="mb-6 text-slate-600 leading-relaxed">
+                        В этом разделе представлен анализ паттернов формообразования глаголов из нашего списка. 
+                        Понимание того, что многие глаголы имеют совпадающие вторую и третью формы, значительно упрощает процесс их запоминания. 
+                        На диаграмме ниже показано процентное соотношение различных типов глаголов.
+                    </p>
+                    <div class="flex flex-col md:flex-row items-center justify-center gap-8">
+                        <div class="w-full md:w-1/2">
+                            <div class="chart-container">
+                                <canvas id="patternsChart"></canvas>
                             </div>
-                            <div className="flex gap-3">
-                                <div className="glass px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm">
-                                    <i className="fa-solid fa-bolt text-orange-500"></i>
-                                    <span className="font-extrabold text-sm">{bestScore}</span>
-                                </div>
-                                <div className="bg-indigo-600 text-white px-4 py-2 rounded-2xl flex items-center gap-2">
-                                    <i className="fa-solid fa-star text-yellow-300"></i>
-                                    <span className="font-extrabold text-sm">LVL {level}</span>
-                                </div>
-                            </div>
-                        </header>
-
-                        {mode === 'menu' && (
-                            <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group cursor-pointer" onClick={startFlashcards}>
-                                    <div className="relative z-10">
-                                        <div className="bg-white/20 w-fit px-3 py-1 rounded-full text-[10px] font-black text-white uppercase mb-4">Ready to Rumble</div>
-                                        <h2 className="text-4xl font-extrabold text-white mb-2">Начать учить</h2>
-                                        <p className="text-indigo-100 text-sm font-medium opacity-80 mb-6">{VERBS.length} глаголов в базе</p>
-                                        <div className="flex items-center gap-2 text-white font-black text-sm uppercase">Вперёд <i className="fa-solid fa-arrow-right group-hover:translate-x-2 transition-transform"></i></div>
+                        </div>
+                        <div class="w-full md:w-1/2 text-slate-700">
+                            <ul class="space-y-4">
+                                <li class="flex items-start">
+                                    <span class="text-amber-500 mr-2 text-xl">■</span>
+                                    <div>
+                                        <strong class="block text-slate-800">Все 3 формы разные (A-B-C)</strong>
+                                        Например: be - was/were - been. Самая сложная группа, требующая отдельного заучивания.
                                     </div>
-                                    <i className="fa-solid fa-brain absolute -right-6 -bottom-6 text-[12rem] text-white opacity-10 rotate-12"></i>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <CardBtn icon="fa-clone" color="text-blue-500" label="Карты" sub="← SPACE →" onClick={startFlashcards} />
-                                    <CardBtn icon="fa-skull" color="text-rose-500" label="Виселица" sub="Угадай V1" onClick={startHangman} />
-                                    <CardBtn icon="fa-list-check" color="text-purple-500" label="Выбор" sub="Тест" onClick={startChoice} />
-                                    <CardBtn icon="fa-bolt" color="text-orange-500" label="Спринт" sub="На скорость" onClick={startSprint} />
-                                    <CardBtn icon="fa-pen-nib" color="text-emerald-500" label="Письмо" sub="Хардкор" onClick={startWriting} />
-                                </div>
-                            </div>
-                        )}
-
-                        {!quizFinished && mode !== 'menu' && (
-                            <div className={`animate-in fade-in zoom-in duration-300 ${feedback === 'wrong' ? 'wrong-shake' : ''}`}>
-                                <div className="flex justify-between items-center mb-6 bg-white p-3 rounded-2xl shadow-sm">
-                                    <button onClick={endSession} className="w-10 h-10 rounded-xl hover:bg-slate-50 text-slate-400"><i className="fa-solid fa-house"></i></button>
-                                    <div className="font-black text-slate-800">
-                                        {mode === 'sprint' ? <span className="text-orange-500">{timeLeft}s</span> : `${idx + 1} / ${currentVerbs.length}`}
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-emerald-500 mr-2 text-xl">■</span>
+                                    <div>
+                                        <strong class="block text-slate-800">2 формы совпадают (A-B-B или A-B-A)</strong>
+                                        Например: buy - bought - bought или come - came - come. Учить значительно легче.
                                     </div>
-                                    <div className="font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">Score: {score}</div>
-                                </div>
-
-                                {mode === 'cards' && (
-                                    <div className="space-y-6">
-                                        <div className={`flip-card w-full h-[400px] ${isFlipped ? 'flipped' : ''}`} onClick={() => setIsFlipped(!isFlipped)}>
-                                            <div className="flip-card-inner">
-                                                <div className="flip-card-front glass shadow-xl border-b-[12px] border-slate-200">
-                                                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-6">Перевод</span>
-                                                    <h3 className="text-5xl font-black text-slate-800">{currentVerbs[idx]?.translate}</h3>
-                                                    <div className="mt-auto text-slate-300 font-bold text-xs uppercase">SPACE или клик</div>
-                                                </div>
-                                                <div className="flip-card-back bg-indigo-600 text-white shadow-xl relative overflow-hidden">
-                                                    <div className="relative z-10 space-y-2">
-                                                        <div className="text-4xl font-black">{currentVerbs[idx]?.v1}</div>
-                                                        <div className="text-4xl font-black opacity-80">{currentVerbs[idx]?.v2}</div>
-                                                        <div className="text-4xl font-black opacity-60">{currentVerbs[idx]?.v3}</div>
-                                                        <button onClick={(e) => { e.stopPropagation(); speakVerb(currentVerbs[idx]); }} className="mt-4 w-14 h-14 bg-white/20 rounded-full"><i className="fa-solid fa-volume-high"></i></button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-4">
-                                            <button className="flex-1 h-16 rounded-2xl bg-white border-2 font-black text-slate-400" onClick={prevCard}><i className="fa-solid fa-arrow-left"></i></button>
-                                            <button className="flex-1 h-16 rounded-2xl bg-slate-900 text-white font-black" onClick={nextCard}><i className="fa-solid fa-arrow-right"></i></button>
-                                        </div>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-sky-500 mr-2 text-xl">■</span>
+                                    <div>
+                                        <strong class="block text-slate-800">Все 3 формы одинаковые (A-A-A)</strong>
+                                        Например: cut - cut - cut. Самая простая для запоминания группа.
                                     </div>
-                                )}
-
-                                {mode === 'hangman' && (
-                                    <div className="space-y-6 text-center">
-                                        <div className="bg-white p-8 rounded-[3rem] shadow-xl">
-                                            <HangmanDrawing mistakes={wrongCount} />
-                                            <p className="text-slate-400 font-bold uppercase text-[10px] mb-2">{currentVerbs[idx].translate}</p>
-                                            <div className="text-3xl font-black tracking-[0.2em] text-slate-800 uppercase mb-4">
-                                                {hangmanWord.split('').map((l, i) => (
-                                                    <span key={i} className="mx-1 border-b-4 border-slate-200 min-w-[25px] inline-block">
-                                                        {guessedLetters.includes(l) ? l : ''}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                            {wrongCount >= 6 && <p className="text-rose-500 font-black">Слово: {hangmanWord.toUpperCase()}</p>}
-                                        </div>
-                                        <div className="grid grid-cols-7 gap-1">
-                                            {'abcdefghijklmnopqrstuvwxyz'.split('').map(l => (
-                                                <button key={l} disabled={guessedLetters.includes(l)} onClick={() => handleHangmanGuess(l)} 
-                                                    className="letter-btn h-10 bg-white rounded-lg font-bold text-slate-700 shadow-sm hover:bg-indigo-500 hover:text-white transition-all uppercase text-xs">
-                                                    {l}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {mode === 'choice' && (
-                                    <div className="space-y-4">
-                                        <div className="bg-white p-12 rounded-[3rem] shadow-xl text-center">
-                                            <h2 className="text-5xl font-black text-slate-800 mb-2">{currentVerbs[idx].v1}</h2>
-                                            <p className="text-slate-400 font-bold uppercase text-[10px]">{currentVerbs[idx].translate}</p>
-                                        </div>
-                                        <div className="grid grid-cols-1 gap-3">
-                                            {options.map((o, i) => (
-                                                <button key={i} onClick={() => handleChoice(o)} className="bg-white p-6 rounded-2xl font-black text-slate-700 shadow-sm border-2 border-transparent hover:border-indigo-500 text-left flex justify-between items-center group">
-                                                    {o} <i className="fa-solid fa-chevron-right text-slate-200 group-hover:text-indigo-500 transition-colors"></i>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {mode === 'sprint' && (
-                                    <div className="space-y-6 text-center">
-                                        <div className="bg-white p-12 rounded-[3rem] shadow-xl">
-                                            <h3 className="text-5xl font-black text-slate-800 mb-4">{sprintItem?.v.translate}</h3>
-                                            <p className="text-2xl font-black text-indigo-600 bg-indigo-50 py-4 rounded-2xl">{sprintItem?.display}</p>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <button onClick={() => handleSprint(false)} className="h-20 rounded-[2rem] bg-white border-4 border-red-500 text-red-500 text-3xl shadow-lg"><i className="fa-solid fa-xmark"></i></button>
-                                            <button onClick={() => handleSprint(true)} className="h-20 rounded-[2rem] bg-white border-4 border-green-500 text-green-500 text-3xl shadow-lg"><i className="fa-solid fa-check"></i></button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {mode === 'writing' && (
-                                    <div className="space-y-4">
-                                        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl text-center">
-                                            <h2 className="text-5xl font-black text-slate-800 mb-2">{currentVerbs[idx].v1}</h2>
-                                            <p className="text-slate-400 font-bold italic">{currentVerbs[idx].translate}</p>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <input value={inputs.v2} onChange={e => setInputs({...inputs, v2: e.target.value})} placeholder="V2 (Past Simple)" className="w-full h-16 px-6 rounded-2xl bg-white border-2 border-slate-100 focus:border-indigo-500 outline-none font-bold text-lg" />
-                                            <input value={inputs.v3} onChange={e => setInputs({...inputs, v3: e.target.value})} placeholder="V3 (Past Participle)" className="w-full h-16 px-6 rounded-2xl bg-white border-2 border-slate-100 focus:border-indigo-500 outline-none font-bold text-lg" />
-                                            <button onClick={handleWrite} className="w-full h-16 bg-slate-900 text-white rounded-2xl font-black text-xl shadow-xl">CHECK</button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {quizFinished && (
-                            <div className="text-center animate-in zoom-in duration-500">
-                                <div className="bg-white p-12 rounded-[3.5rem] shadow-2xl">
-                                    <i className="fa-solid fa-award text-7xl text-yellow-400 mb-6"></i>
-                                    <h2 className="text-4xl font-black text-slate-800">DONE!</h2>
-                                    <div className="grid grid-cols-2 gap-4 my-8">
-                                        <div className="bg-slate-50 p-6 rounded-3xl">
-                                            <p className="text-[10px] font-black text-slate-300 uppercase">Score</p>
-                                            <p className="text-3xl font-black text-slate-800">{score}</p>
-                                        </div>
-                                        <div className="bg-indigo-50 p-6 rounded-3xl">
-                                            <p className="text-[10px] font-black text-indigo-300 uppercase">XP</p>
-                                            <p className="text-3xl font-black text-indigo-600">+{score * 10}</p>
-                                        </div>
-                                    </div>
-                                    <button onClick={endSession} className="w-full h-16 bg-indigo-600 text-white rounded-2xl font-black text-xl">MENU</button>
-                                </div>
-                            </div>
-                        )}
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            );
+            </section>
+
+            <section id="sec-table" class="hidden animate-fade-in">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Полный интерактивный список</h2>
+                    <p class="mb-6 text-slate-600 leading-relaxed">
+                        Используйте строку поиска для мгновенного нахождения нужного глагола по английскому слову или русскому переводу. 
+                        В таблице представлены инфинитив, прошедшее простое время, причастие прошедшего времени и перевод.
+                    </p>
+                    
+                    <div class="mb-6 relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
+                        <input type="text" id="searchInput" placeholder="Поиск по глаголу или переводу (например, 'catch' или 'ловить')..." 
+                            class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-shadow">
+                    </div>
+
+                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-700 text-sm uppercase tracking-wider border-b border-slate-200">
+                                    <th class="p-4 font-semibold">Infinitive (V1)</th>
+                                    <th class="p-4 font-semibold">Past Simple (V2)</th>
+                                    <th class="p-4 font-semibold">Past Participle (V3)</th>
+                                    <th class="p-4 font-semibold">Перевод</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody" class="divide-y divide-slate-100">
+                            </tbody>
+                        </table>
+                        <div id="noResults" class="hidden p-8 text-center text-slate-500">
+                            Глаголы не найдены. Попробуйте изменить запрос.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="sec-practice" class="hidden animate-fade-in">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8 max-w-2xl mx-auto text-center">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Тренировка памяти</h2>
+                    <p class="mb-8 text-slate-600 leading-relaxed">
+                        Проверьте свои знания с помощью интерактивных карточек. Вы увидите русский перевод или начальную форму. 
+                        Попытайтесь вспомнить все три формы глагола, затем нажмите на карточку, чтобы перевернуть её и проверить себя.
+                    </p>
+
+                    <div id="flashcardContainer" class="flashcard w-full h-64 perspective-1000 cursor-pointer mx-auto relative mb-8">
+                        <div class="flashcard-inner relative w-full h-full text-center shadow-lg rounded-2xl">
+                            
+                            <div class="flashcard-front absolute w-full h-full bg-amber-50 border-2 border-amber-200 rounded-2xl flex flex-col justify-center items-center p-6">
+                                <span class="text-sm font-semibold text-amber-600 uppercase tracking-widest mb-2">Переведите и назовите 3 формы</span>
+                                <h3 id="cardPrompt" class="text-3xl font-bold text-slate-800">Загрузка...</h3>
+                                <p class="mt-6 text-sm text-slate-400">↻ Нажмите, чтобы перевернуть</p>
+                            </div>
+                            
+                            <div class="flashcard-back absolute w-full h-full bg-white border-2 border-slate-200 rounded-2xl flex flex-col justify-center items-center p-6">
+                                <h3 id="cardV1" class="text-2xl font-bold text-amber-700 mb-2">V1</h3>
+                                <div class="w-16 h-1 bg-slate-100 mb-2 mx-auto"></div>
+                                <h3 id="cardV2" class="text-2xl font-bold text-slate-700 mb-2">V2</h3>
+                                <div class="w-16 h-1 bg-slate-100 mb-2 mx-auto"></div>
+                                <h3 id="cardV3" class="text-2xl font-bold text-slate-700">V3</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center space-x-4 mt-6">
+                        <button id="btnNextCard" class="px-8 py-3 bg-amber-600 text-white font-semibold rounded-lg shadow-md hover:bg-amber-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                            Следующий глагол ➔
+                        </button>
+                    </div>
+                    
+                    <div class="mt-6 text-slate-400 text-sm" id="progressText">
+                        Карточка 1 из N
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const verbsData = [
+            {v1: "be", ru: "быть", v2: "was / were", v3: "been"},
+            {v1: "become", ru: "становиться", v2: "became", v3: "become"},
+            {v1: "begin", ru: "начинать", v2: "began", v3: "begun"},
+            {v1: "break", ru: "ломать", v2: "broke", v3: "broken"},
+            {v1: "bring", ru: "приносить", v2: "brought", v3: "brought"},
+            {v1: "build", ru: "строить", v2: "built", v3: "built"},
+            {v1: "burn", ru: "гореть / жечь", v2: "burnt / burned", v3: "burnt / burned"},
+            {v1: "buy", ru: "покупать", v2: "bought", v3: "bought"},
+            {v1: "catch", ru: "ловить / поймать", v2: "caught", v3: "caught"},
+            {v1: "choose", ru: "выбирать", v2: "chose", v3: "chosen"},
+            {v1: "come", ru: "приходить", v2: "came", v3: "come"},
+            {v1: "cost", ru: "стоить", v2: "cost", v3: "cost"},
+            {v1: "cut", ru: "резать", v2: "cut", v3: "cut"},
+            {v1: "do", ru: "делать", v2: "did", v3: "done"},
+            {v1: "draw", ru: "рисовать / чертить", v2: "drew", v3: "drawn"},
+            {v1: "dream", ru: "мечтать / сниться", v2: "dreamed / dreamt", v3: "dreamed / dreamt"},
+            {v1: "drink", ru: "пить", v2: "drank", v3: "drunk"},
+            {v1: "drive", ru: "водить (машину)", v2: "drove", v3: "driven"},
+            {v1: "eat", ru: "есть / кушать", v2: "ate", v3: "eaten"},
+            {v1: "fall", ru: "падать", v2: "fell", v3: "fallen"},
+            {v1: "feel", ru: "чувствовать", v2: "felt", v3: "felt"},
+            {v1: "find", ru: "находить", v2: "found", v3: "found"},
+            {v1: "fly", ru: "летать", v2: "flew", v3: "flown"},
+            {v1: "forget", ru: "забывать", v2: "forgot", v3: "forgotten"},
+            {v1: "get", ru: "получать / добираться", v2: "got", v3: "got"},
+            {v1: "give", ru: "давать", v2: "gave", v3: "given"},
+            {v1: "go", ru: "идти / ехать", v2: "went", v3: "gone / been"},
+            {v1: "grow", ru: "расти / выращивать", v2: "grew", v3: "grown"},
+            {v1: "have", ru: "иметь", v2: "had", v3: "had"},
+            {v1: "hear", ru: "слышать", v2: "heard", v3: "heard"},
+            {v1: "hit", ru: "ударять", v2: "hit", v3: "hit"},
+            {v1: "hold", ru: "держать", v2: "held", v3: "held"},
+            {v1: "hurt", ru: "ранить / болеть", v2: "hurt", v3: "hurt"},
+            {v1: "keep", ru: "хранить / держать", v2: "kept", v3: "kept"},
+            {v1: "know", ru: "знать", v2: "knew", v3: "known"},
+            {v1: "learn", ru: "учить (что-то)", v2: "learned / learnt", v3: "learned / learnt"},
+            {v1: "leave", ru: "уходить / покидать", v2: "left", v3: "left"},
+            {v1: "lend", ru: "одалживать (кому-то)", v2: "lent", v3: "lent"},
+            {v1: "lie", ru: "лежать", v2: "lay", v3: "lain"},
+            {v1: "lose", ru: "терять / проигрывать", v2: "lost", v3: "lost"},
+            {v1: "make", ru: "делать / создавать", v2: "made", v3: "made"},
+            {v1: "mean", ru: "значить / иметь в виду", v2: "meant", v3: "meant"},
+            {v1: "meet", ru: "встречать / знакомиться", v2: "met", v3: "met"},
+            {v1: "pay", ru: "платить", v2: "paid", v3: "paid"},
+            {v1: "put", ru: "класть / ставить", v2: "put", v3: "put"},
+            {v1: "read", ru: "читать", v2: "read /red/", v3: "read /red/"},
+            {v1: "ride", ru: "ездить (верхом/вел)", v2: "rode", v3: "ridden"},
+            {v1: "ring", ru: "звонить / звенеть", v2: "rang", v3: "rung"},
+            {v1: "run", ru: "бежать", v2: "ran", v3: "run"},
+            {v1: "say", ru: "сказать / говорить", v2: "said", v3: "said"},
+            {v1: "see", ru: "видеть", v2: "saw", v3: "seen"},
+            {v1: "sell", ru: "продавать", v2: "sold", v3: "sold"},
+            {v1: "send", ru: "посылать / отправлять", v2: "sent", v3: "sent"},
+            {v1: "show", ru: "показывать", v2: "showed", v3: "shown"},
+            {v1: "shut", ru: "закрывать", v2: "shut", v3: "shut"},
+            {v1: "sing", ru: "петь", v2: "sang", v3: "sung"},
+            {v1: "sit", ru: "сидеть", v2: "sat", v3: "sat"},
+            {v1: "sleep", ru: "спать", v2: "slept", v3: "slept"},
+            {v1: "speak", ru: "говорить / разговаривать", v2: "spoke", v3: "spoken"},
+            {v1: "spell", ru: "произносить по буквам", v2: "spelled / spelt", v3: "spelled / spelt"}
+        ];
+
+        let state = {
+            activeTab: 'analytics',
+            searchQuery: '',
+            practiceQueue: [],
+            currentCardIndex: 0
+        };
+
+        const els = {
+            btnAnalytics: document.getElementById('btn-tab-analytics'),
+            btnTable: document.getElementById('btn-tab-table'),
+            btnPractice: document.getElementById('btn-tab-practice'),
+            secAnalytics: document.getElementById('sec-analytics'),
+            secTable: document.getElementById('sec-table'),
+            secPractice: document.getElementById('sec-practice'),
+            tableBody: document.getElementById('tableBody'),
+            searchInput: document.getElementById('searchInput'),
+            noResults: document.getElementById('noResults'),
+            flashcardContainer: document.getElementById('flashcardContainer'),
+            btnNextCard: document.getElementById('btnNextCard'),
+            cardPrompt: document.getElementById('cardPrompt'),
+            cardV1: document.getElementById('cardV1'),
+            cardV2: document.getElementById('cardV2'),
+            cardV3: document.getElementById('cardV3'),
+            progressText: document.getElementById('progressText')
+        };
+
+        function initApp() {
+            renderTable(verbsData);
+            initChart();
+            initPracticeMode();
+            setupEventListeners();
         }
 
-        const CardBtn = ({ icon, color, label, sub, onClick }) => (
-            <div onClick={onClick} className="bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-xl cursor-pointer transition-all border-2 border-transparent hover:border-indigo-100 group">
-                <div className={`${color} bg-current/10 w-12 h-12 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                    <i className={`fa-solid ${icon} text-xl`}></i>
-                </div>
-                <h4 className="font-extrabold text-slate-800 text-sm uppercase">{label}</h4>
-                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{sub}</p>
-            </div>
-        );
+        function setupEventListeners() {
+            els.btnAnalytics.addEventListener('click', () => switchTab('analytics'));
+            els.btnTable.addEventListener('click', () => switchTab('table'));
+            els.btnPractice.addEventListener('click', () => switchTab('practice'));
+            
+            els.searchInput.addEventListener('input', (e) => {
+                state.searchQuery = e.target.value.toLowerCase();
+                const filtered = verbsData.filter(verb => 
+                    verb.v1.toLowerCase().includes(state.searchQuery) ||
+                    verb.v2.toLowerCase().includes(state.searchQuery) ||
+                    verb.v3.toLowerCase().includes(state.searchQuery) ||
+                    verb.ru.toLowerCase().includes(state.searchQuery)
+                );
+                renderTable(filtered);
+            });
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+            els.flashcardContainer.addEventListener('click', () => {
+                els.flashcardContainer.classList.toggle('flipped');
+            });
+
+            els.btnNextCard.addEventListener('click', () => {
+                els.flashcardContainer.classList.remove('flipped');
+                setTimeout(() => {
+                    nextPracticeCard();
+                }, 300); 
+            });
+        }
+
+        function switchTab(tabId) {
+            state.activeTab = tabId;
+            
+            els.btnAnalytics.className = "px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-amber-700 hover:bg-amber-50 transition-colors";
+            els.btnTable.className = "px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-amber-700 hover:bg-amber-50 transition-colors";
+            els.btnPractice.className = "px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-amber-700 hover:bg-amber-50 transition-colors";
+            
+            const activeClass = "px-6 py-3 font-semibold text-amber-700 border-b-2 border-amber-600 bg-amber-50 transition-colors";
+            if(tabId === 'analytics') els.btnAnalytics.className = activeClass;
+            if(tabId === 'table') els.btnTable.className = activeClass;
+            if(tabId === 'practice') els.btnPractice.className = activeClass;
+
+            els.secAnalytics.classList.add('hidden');
+            els.secAnalytics.classList.remove('block');
+            els.secTable.classList.add('hidden');
+            els.secTable.classList.remove('block');
+            els.secPractice.classList.add('hidden');
+            els.secPractice.classList.remove('block');
+
+            if(tabId === 'analytics') {
+                els.secAnalytics.classList.remove('hidden');
+                els.secAnalytics.classList.add('block');
+            }
+            if(tabId === 'table') {
+                els.secTable.classList.remove('hidden');
+                els.secTable.classList.add('block');
+            }
+            if(tabId === 'practice') {
+                els.secPractice.classList.remove('hidden');
+                els.secPractice.classList.add('block');
+            }
+        }
+
+        function renderTable(data) {
+            els.tableBody.innerHTML = '';
+            if (data.length === 0) {
+                els.noResults.classList.remove('hidden');
+            } else {
+                els.noResults.classList.add('hidden');
+                data.forEach((verb, index) => {
+                    const row = document.createElement('tr');
+                    row.className = index % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/50 hover:bg-slate-50';
+                    row.innerHTML = `
+                        <td class="p-4 font-medium text-amber-900 border-b border-slate-100">${highlight(verb.v1)}</td>
+                        <td class="p-4 text-slate-700 border-b border-slate-100">${highlight(verb.v2)}</td>
+                        <td class="p-4 text-slate-700 border-b border-slate-100">${highlight(verb.v3)}</td>
+                        <td class="p-4 text-slate-600 border-b border-slate-100">${highlight(verb.ru)}</td>
+                    `;
+                    els.tableBody.appendChild(row);
+                });
+            }
+        }
+
+        function highlight(text) {
+            if (!state.searchQuery) return text;
+            const regex = new RegExp(`(${state.searchQuery})`, 'gi');
+            return text.replace(regex, '<span class="bg-amber-200 text-amber-900 rounded px-1">$1</span>');
+        }
+
+        function initChart() {
+            let allDifferent = 0;
+            let twoSame = 0;
+            let allSame = 0;
+
+            verbsData.forEach(v => {
+                const cleanV1 = v.v1.split('/')[0].trim();
+                const cleanV2 = v.v2.split('/')[0].trim();
+                const cleanV3 = v.v3.split('/')[0].trim();
+                
+                if (cleanV1 === cleanV2 && cleanV2 === cleanV3) {
+                    allSame++;
+                } else if (cleanV1 === cleanV2 || cleanV2 === cleanV3 || cleanV1 === cleanV3) {
+                    twoSame++;
+                } else {
+                    allDifferent++;
+                }
+            });
+
+            const ctx = document.getElementById('patternsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['A-B-C (Разные)', 'A-B-B (Две одинаковые)', 'A-A-A (Все одинаковые)'],
+                    datasets: [{
+                        data: [allDifferent, twoSame, allSame],
+                        backgroundColor: [
+                            '#f59e0b', 
+                            '#10b981', 
+                            '#0ea5e9'  
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: "'Segoe UI', sans-serif",
+                                    size: 13
+                                },
+                                color: '#475569'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 14 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) label += ': ';
+                                    label += context.parsed + ' глаголов';
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function initPracticeMode() {
+            state.practiceQueue = [...verbsData];
+            shuffleArray(state.practiceQueue);
+            state.currentCardIndex = 0;
+            updateFlashcard();
+        }
+
+        function nextPracticeCard() {
+            state.currentCardIndex++;
+            if (state.currentCardIndex >= state.practiceQueue.length) {
+                shuffleArray(state.practiceQueue);
+                state.currentCardIndex = 0;
+            }
+            updateFlashcard();
+        }
+
+        function updateFlashcard() {
+            const currentVerb = state.practiceQueue[state.currentCardIndex];
+            els.cardPrompt.textContent = currentVerb.ru;
+            els.cardV1.textContent = currentVerb.v1;
+            els.cardV2.textContent = currentVerb.v2;
+            els.cardV3.textContent = currentVerb.v3;
+            
+            els.progressText.textContent = `Карточка ${state.currentCardIndex + 1} из ${state.practiceQueue.length}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+
     </script>
 </body>
 </html>
