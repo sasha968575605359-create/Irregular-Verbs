@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Интерактивный справочник неправильных глаголов</title>
+    <title>Інтерактивний довідник неправильних дієслів</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -39,34 +39,34 @@
 <body class="min-h-screen">
 
 <!-- Chosen Palette: Warm Neutrals (Background: #fdfbf7, Text: #334155, Accent: #d97706, Secondary: #e2e8f0) -->
-<!-- Application Structure Plan: The SPA is divided into three functional views controlled by a tab navigation to avoid overwhelming the user. 1. 'Аналитика' (Analytics): Uses Chart.js to provide a high-level overview of verb forms, helping users understand patterns before memorizing. 2. 'Справочник' (Directory): An interactive, searchable table for quick lookup and reference, allowing users to filter by any form or Russian translation. 3. 'Тренировка' (Practice): An interactive flashcard system designed for active recall and engagement. This structure transitions the user from understanding -> referencing -> active learning. -->
-<!-- Visualization & Content Choices: 1. Donut Chart (Chart.js) -> Goal: Inform/Organize -> Shows the distribution of verb morphological patterns (all forms different, two forms same, all same). Justification: Helps identify easier groups to learn first. 2. Interactive Table (HTML/JS) -> Goal: Organize/Search -> Presents the raw report data in a highly accessible way. 3. Flashcards (HTML/CSS 3D Transforms/JS) -> Goal: Engagement/Change -> Fosters active learning instead of passive reading. NO SVG/Mermaid used; pure CSS shapes and Unicode icons used. -->
+<!-- Application Structure Plan: The SPA is divided into three functional views. 1. 'Аналітика' (Analytics): Overview of patterns. 2. 'Довідник' (Directory): Searchable table with Ukrainian translations. 3. 'Тренування' (Practice): Flashcards with Ukrainian prompts. All UI text and data strings are localized to Ukrainian. -->
+<!-- Visualization & Content Choices: Donut Chart for patterns, Interactive Table with search, and 3D Flashcards for active recall. -->
 <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
     <div class="max-w-6xl mx-auto px-4 py-8">
         
         <header class="mb-10 text-center">
-            <h1 class="text-4xl font-bold text-amber-700 mb-4">📘 Неправильные глаголы английского языка</h1>
+            <h1 class="text-4xl font-bold text-amber-700 mb-4">📘 Неправильні дієслова англійської мови</h1>
             <p class="text-lg text-slate-600 max-w-3xl mx-auto">
-                Этот интерактивный инструмент поможет вам изучить, проанализировать и запомнить основные неправильные глаголы. 
-                Используйте вкладки ниже для переключения между режимом аналитики, полным справочником и интерактивными карточками для тренировки.
+                Цей інтерактивний інструмент допоможе вам вивчити, проаналізувати та запам'ятати основні неправильні дієслова. 
+                Використовуйте вкладки нижче для перемикання між режимом аналітики, повним довідником та картками для тренування.
             </p>
         </header>
 
         <nav class="flex justify-center mb-8 border-b border-slate-300">
-            <button id="btn-tab-analytics" class="px-6 py-3 font-semibold text-amber-700 border-b-2 border-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors">📊 Аналитика</button>
-            <button id="btn-tab-table" class="px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-amber-700 hover:bg-amber-50 transition-colors">🔍 Справочник</button>
-            <button id="btn-tab-practice" class="px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-amber-700 hover:bg-amber-50 transition-colors">🎓 Тренировка</button>
+            <button id="btn-tab-analytics" class="px-6 py-3 font-semibold text-amber-700 border-b-2 border-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors">📊 Аналітика</button>
+            <button id="btn-tab-table" class="px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-amber-700 hover:bg-amber-50 transition-colors">🔍 Довідник</button>
+            <button id="btn-tab-practice" class="px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-amber-700 hover:bg-amber-50 transition-colors">🎓 Тренування</button>
         </nav>
 
         <main>
             <section id="sec-analytics" class="block animate-fade-in">
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Структура неправильных глаголов</h2>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Структура неправильних дієслів</h2>
                     <p class="mb-6 text-slate-600 leading-relaxed">
-                        В этом разделе представлен анализ паттернов формообразования глаголов из нашего списка. 
-                        Понимание того, что многие глаголы имеют совпадающие вторую и третью формы, значительно упрощает процесс их запоминания. 
-                        На диаграмме ниже показано процентное соотношение различных типов глаголов.
+                        У цьому розділі представлено аналіз патернів формоутворення дієслів зі списку. 
+                        Розуміння того, що багато дієслів мають однакові другу та третю форми, значно спрощує процес їх запам'ятовування. 
+                        На діаграмі нижче показано відсоткове співвідношення різних типів дієслів.
                     </p>
                     <div class="flex flex-col md:flex-row items-center justify-center gap-8">
                         <div class="w-full md:w-1/2">
@@ -79,22 +79,22 @@
                                 <li class="flex items-start">
                                     <span class="text-amber-500 mr-2 text-xl">■</span>
                                     <div>
-                                        <strong class="block text-slate-800">Все 3 формы разные (A-B-C)</strong>
-                                        Например: be - was/were - been. Самая сложная группа, требующая отдельного заучивания.
+                                        <strong class="block text-slate-800">Усі 3 форми різні (A-B-C)</strong>
+                                        Наприклад: be - was/were - been. Найскладніша група, що потребує окремого вивчення.
                                     </div>
                                 </li>
                                 <li class="flex items-start">
                                     <span class="text-emerald-500 mr-2 text-xl">■</span>
                                     <div>
-                                        <strong class="block text-slate-800">2 формы совпадают (A-B-B или A-B-A)</strong>
-                                        Например: buy - bought - bought или come - came - come. Учить значительно легче.
+                                        <strong class="block text-slate-800">2 форми збігаються (A-B-B або A-B-A)</strong>
+                                        Наприклад: buy - bought - bought або come - came - come. Вчити значно легше.
                                     </div>
                                 </li>
                                 <li class="flex items-start">
                                     <span class="text-sky-500 mr-2 text-xl">■</span>
                                     <div>
-                                        <strong class="block text-slate-800">Все 3 формы одинаковые (A-A-A)</strong>
-                                        Например: cut - cut - cut. Самая простая для запоминания группа.
+                                        <strong class="block text-slate-800">Усі 3 форми однакові (A-A-A)</strong>
+                                        Наприклад: cut - cut - cut. Найпростіша для запам'ятовування група.
                                     </div>
                                 </li>
                             </ul>
@@ -105,15 +105,14 @@
 
             <section id="sec-table" class="hidden animate-fade-in">
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Полный интерактивный список</h2>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Повний інтерактивний список</h2>
                     <p class="mb-6 text-slate-600 leading-relaxed">
-                        Используйте строку поиска для мгновенного нахождения нужного глагола по английскому слову или русскому переводу. 
-                        В таблице представлены инфинитив, прошедшее простое время, причастие прошедшего времени и перевод.
+                        Використовуйте рядок пошуку для миттєвого знаходження потрібного дієслова за англійським словом або українським перекладом.
                     </p>
                     
                     <div class="mb-6 relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
-                        <input type="text" id="searchInput" placeholder="Поиск по глаголу или переводу (например, 'catch' или 'ловить')..." 
+                        <input type="text" id="searchInput" placeholder="Пошук за дієсловом або перекладом (наприклад, 'catch' або 'ловити')..." 
                             class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-shadow">
                     </div>
 
@@ -124,14 +123,14 @@
                                     <th class="p-4 font-semibold">Infinitive (V1)</th>
                                     <th class="p-4 font-semibold">Past Simple (V2)</th>
                                     <th class="p-4 font-semibold">Past Participle (V3)</th>
-                                    <th class="p-4 font-semibold">Перевод</th>
+                                    <th class="p-4 font-semibold">Переклад</th>
                                 </tr>
                             </thead>
                             <tbody id="tableBody" class="divide-y divide-slate-100">
                             </tbody>
                         </table>
                         <div id="noResults" class="hidden p-8 text-center text-slate-500">
-                            Глаголы не найдены. Попробуйте изменить запрос.
+                            Дієслова не знайдено. Спробуйте змінити запит.
                         </div>
                     </div>
                 </div>
@@ -139,19 +138,19 @@
 
             <section id="sec-practice" class="hidden animate-fade-in">
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8 max-w-2xl mx-auto text-center">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Тренировка памяти</h2>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Тренування пам'яті</h2>
                     <p class="mb-8 text-slate-600 leading-relaxed">
-                        Проверьте свои знания с помощью интерактивных карточек. Вы увидите русский перевод или начальную форму. 
-                        Попытайтесь вспомнить все три формы глагола, затем нажмите на карточку, чтобы перевернуть её и проверить себя.
+                        Перевірте свої знання за допомогою інтерактивних карток. Ви побачите український переклад. 
+                        Спробуйте згадати всі три форми дієслова, потім натисніть на картку, щоб перевернути її.
                     </p>
 
                     <div id="flashcardContainer" class="flashcard w-full h-64 perspective-1000 cursor-pointer mx-auto relative mb-8">
                         <div class="flashcard-inner relative w-full h-full text-center shadow-lg rounded-2xl">
                             
                             <div class="flashcard-front absolute w-full h-full bg-amber-50 border-2 border-amber-200 rounded-2xl flex flex-col justify-center items-center p-6">
-                                <span class="text-sm font-semibold text-amber-600 uppercase tracking-widest mb-2">Переведите и назовите 3 формы</span>
-                                <h3 id="cardPrompt" class="text-3xl font-bold text-slate-800">Загрузка...</h3>
-                                <p class="mt-6 text-sm text-slate-400">↻ Нажмите, чтобы перевернуть</p>
+                                <span class="text-sm font-semibold text-amber-600 uppercase tracking-widest mb-2">Перекладіть та назвіть 3 форми</span>
+                                <h3 id="cardPrompt" class="text-3xl font-bold text-slate-800">Завантаження...</h3>
+                                <p class="mt-6 text-sm text-slate-400">↻ Натисніть, щоб перевернути</p>
                             </div>
                             
                             <div class="flashcard-back absolute w-full h-full bg-white border-2 border-slate-200 rounded-2xl flex flex-col justify-center items-center p-6">
@@ -166,12 +165,12 @@
 
                     <div class="flex justify-center space-x-4 mt-6">
                         <button id="btnNextCard" class="px-8 py-3 bg-amber-600 text-white font-semibold rounded-lg shadow-md hover:bg-amber-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
-                            Следующий глагол ➔
+                            Наступне дієслово ➔
                         </button>
                     </div>
                     
                     <div class="mt-6 text-slate-400 text-sm" id="progressText">
-                        Карточка 1 из N
+                        Картка 1 з N
                     </div>
                 </div>
             </section>
@@ -180,66 +179,66 @@
 
     <script>
         const verbsData = [
-            {v1: "be", ru: "быть", v2: "was / were", v3: "been"},
-            {v1: "become", ru: "становиться", v2: "became", v3: "become"},
-            {v1: "begin", ru: "начинать", v2: "began", v3: "begun"},
-            {v1: "break", ru: "ломать", v2: "broke", v3: "broken"},
-            {v1: "bring", ru: "приносить", v2: "brought", v3: "brought"},
-            {v1: "build", ru: "строить", v2: "built", v3: "built"},
-            {v1: "burn", ru: "гореть / жечь", v2: "burnt / burned", v3: "burnt / burned"},
-            {v1: "buy", ru: "покупать", v2: "bought", v3: "bought"},
-            {v1: "catch", ru: "ловить / поймать", v2: "caught", v3: "caught"},
-            {v1: "choose", ru: "выбирать", v2: "chose", v3: "chosen"},
-            {v1: "come", ru: "приходить", v2: "came", v3: "come"},
-            {v1: "cost", ru: "стоить", v2: "cost", v3: "cost"},
-            {v1: "cut", ru: "резать", v2: "cut", v3: "cut"},
-            {v1: "do", ru: "делать", v2: "did", v3: "done"},
-            {v1: "draw", ru: "рисовать / чертить", v2: "drew", v3: "drawn"},
-            {v1: "dream", ru: "мечтать / сниться", v2: "dreamed / dreamt", v3: "dreamed / dreamt"},
-            {v1: "drink", ru: "пить", v2: "drank", v3: "drunk"},
-            {v1: "drive", ru: "водить (машину)", v2: "drove", v3: "driven"},
-            {v1: "eat", ru: "есть / кушать", v2: "ate", v3: "eaten"},
-            {v1: "fall", ru: "падать", v2: "fell", v3: "fallen"},
-            {v1: "feel", ru: "чувствовать", v2: "felt", v3: "felt"},
-            {v1: "find", ru: "находить", v2: "found", v3: "found"},
-            {v1: "fly", ru: "летать", v2: "flew", v3: "flown"},
-            {v1: "forget", ru: "забывать", v2: "forgot", v3: "forgotten"},
-            {v1: "get", ru: "получать / добираться", v2: "got", v3: "got"},
-            {v1: "give", ru: "давать", v2: "gave", v3: "given"},
-            {v1: "go", ru: "идти / ехать", v2: "went", v3: "gone / been"},
-            {v1: "grow", ru: "расти / выращивать", v2: "grew", v3: "grown"},
-            {v1: "have", ru: "иметь", v2: "had", v3: "had"},
-            {v1: "hear", ru: "слышать", v2: "heard", v3: "heard"},
-            {v1: "hit", ru: "ударять", v2: "hit", v3: "hit"},
-            {v1: "hold", ru: "держать", v2: "held", v3: "held"},
-            {v1: "hurt", ru: "ранить / болеть", v2: "hurt", v3: "hurt"},
-            {v1: "keep", ru: "хранить / держать", v2: "kept", v3: "kept"},
-            {v1: "know", ru: "знать", v2: "knew", v3: "known"},
-            {v1: "learn", ru: "учить (что-то)", v2: "learned / learnt", v3: "learned / learnt"},
-            {v1: "leave", ru: "уходить / покидать", v2: "left", v3: "left"},
-            {v1: "lend", ru: "одалживать (кому-то)", v2: "lent", v3: "lent"},
-            {v1: "lie", ru: "лежать", v2: "lay", v3: "lain"},
-            {v1: "lose", ru: "терять / проигрывать", v2: "lost", v3: "lost"},
-            {v1: "make", ru: "делать / создавать", v2: "made", v3: "made"},
-            {v1: "mean", ru: "значить / иметь в виду", v2: "meant", v3: "meant"},
-            {v1: "meet", ru: "встречать / знакомиться", v2: "met", v3: "met"},
-            {v1: "pay", ru: "платить", v2: "paid", v3: "paid"},
-            {v1: "put", ru: "класть / ставить", v2: "put", v3: "put"},
-            {v1: "read", ru: "читать", v2: "read /red/", v3: "read /red/"},
-            {v1: "ride", ru: "ездить (верхом/вел)", v2: "rode", v3: "ridden"},
-            {v1: "ring", ru: "звонить / звенеть", v2: "rang", v3: "rung"},
-            {v1: "run", ru: "бежать", v2: "ran", v3: "run"},
-            {v1: "say", ru: "сказать / говорить", v2: "said", v3: "said"},
-            {v1: "see", ru: "видеть", v2: "saw", v3: "seen"},
-            {v1: "sell", ru: "продавать", v2: "sold", v3: "sold"},
-            {v1: "send", ru: "посылать / отправлять", v2: "sent", v3: "sent"},
-            {v1: "show", ru: "показывать", v2: "showed", v3: "shown"},
-            {v1: "shut", ru: "закрывать", v2: "shut", v3: "shut"},
-            {v1: "sing", ru: "петь", v2: "sang", v3: "sung"},
-            {v1: "sit", ru: "сидеть", v2: "sat", v3: "sat"},
-            {v1: "sleep", ru: "спать", v2: "slept", v3: "slept"},
-            {v1: "speak", ru: "говорить / разговаривать", v2: "spoke", v3: "spoken"},
-            {v1: "spell", ru: "произносить по буквам", v2: "spelled / spelt", v3: "spelled / spelt"}
+            {v1: "be", ru: "бути", v2: "was / were", v3: "been"},
+            {v1: "become", ru: "ставати", v2: "became", v3: "become"},
+            {v1: "begin", ru: "починати", v2: "began", v3: "begun"},
+            {v1: "break", ru: "ламати", v2: "broke", v3: "broken"},
+            {v1: "bring", ru: "приносити", v2: "brought", v3: "brought"},
+            {v1: "build", ru: "будувати", v2: "built", v3: "built"},
+            {v1: "burn", ru: "горіти / палити", v2: "burnt / burned", v3: "burnt / burned"},
+            {v1: "buy", ru: "купувати", v2: "bought", v3: "bought"},
+            {v1: "catch", ru: "ловити / впіймати", v2: "caught", v3: "caught"},
+            {v1: "choose", ru: "вибирати", v2: "chose", v3: "chosen"},
+            {v1: "come", ru: "приходити", v2: "came", v3: "come"},
+            {v1: "cost", ru: "коштувати", v2: "cost", v3: "cost"},
+            {v1: "cut", ru: "різати", v2: "cut", v3: "cut"},
+            {v1: "do", ru: "робити", v2: "did", v3: "done"},
+            {v1: "draw", ru: "малювати / креслити", v2: "drew", v3: "drawn"},
+            {v1: "dream", ru: "мріяти / снитися", v2: "dreamed / dreamt", v3: "dreamed / dreamt"},
+            {v1: "drink", ru: "пити", v2: "drank", v3: "drunk"},
+            {v1: "drive", ru: "водити (авто)", v2: "drove", v3: "driven"},
+            {v1: "eat", ru: "їсти", v2: "ate", v3: "eaten"},
+            {v1: "fall", ru: "падати", v2: "fell", v3: "fallen"},
+            {v1: "feel", ru: "відчувати", v2: "felt", v3: "felt"},
+            {v1: "find", ru: "знаходити", v2: "found", v3: "found"},
+            {v1: "fly", ru: "літати", v2: "flew", v3: "flown"},
+            {v1: "forget", ru: "забувати", v2: "forgot", v3: "forgotten"},
+            {v1: "get", ru: "отримувати / діставатися", v2: "got", v3: "got"},
+            {v1: "give", ru: "давати", v2: "gave", v3: "given"},
+            {v1: "go", ru: "йти / їхати", v2: "went", v3: "gone / been"},
+            {v1: "grow", ru: "рости / вирощувати", v2: "grew", v3: "grown"},
+            {v1: "have", ru: "мати", v2: "had", v3: "had"},
+            {v1: "hear", ru: "чути", v2: "heard", v3: "heard"},
+            {v1: "hit", ru: "вдаряти", v2: "hit", v3: "hit"},
+            {v1: "hold", ru: "тримати", v2: "held", v3: "held"},
+            {v1: "hurt", ru: "ранити / боліти", v2: "hurt", v3: "hurt"},
+            {v1: "keep", ru: "зберігати / тримати", v2: "kept", v3: "kept"},
+            {v1: "know", ru: "знати", v2: "knew", v3: "known"},
+            {v1: "learn", ru: "вчитися / вивчати", v2: "learned / learnt", v3: "learned / learnt"},
+            {v1: "leave", ru: "йти / залишати", v2: "left", v3: "left"},
+            {v1: "lend", ru: "позичати (комусь)", v2: "lent", v3: "lent"},
+            {v1: "lie", ru: "лежати", v2: "lay", v3: "lain"},
+            {v1: "lose", ru: "губити / програвати", v2: "lost", v3: "lost"},
+            {v1: "make", ru: "робити / створювати", v2: "made", v3: "made"},
+            {v1: "mean", ru: "означати / мати на увазі", v2: "meant", v3: "meant"},
+            {v1: "meet", ru: "зустрічати / знайомитись", v2: "met", v3: "met"},
+            {v1: "pay", ru: "платити", v2: "paid", v3: "paid"},
+            {v1: "put", ru: "класти / ставити", v2: "put", v3: "put"},
+            {v1: "read", ru: "читати", v2: "read /red/", v3: "read /red/"},
+            {v1: "ride", ru: "їхати (верхи/вело)", v2: "rode", v3: "ridden"},
+            {v1: "ring", ru: "дзвонити", v2: "rang", v3: "rung"},
+            {v1: "run", ru: "бігти", v2: "ran", v3: "run"},
+            {v1: "say", ru: "казати / говорити", v2: "said", v3: "said"},
+            {v1: "see", ru: "бачити", v2: "saw", v3: "seen"},
+            {v1: "sell", ru: "продавати", v2: "sold", v3: "sold"},
+            {v1: "send", ru: "надсилати", v2: "sent", v3: "sent"},
+            {v1: "show", ru: "показувати", v2: "showed", v3: "shown"},
+            {v1: "shut", ru: "закривати", v2: "shut", v3: "shut"},
+            {v1: "sing", ru: "співати", v2: "sang", v3: "sung"},
+            {v1: "sit", ru: "сидіти", v2: "sat", v3: "sat"},
+            {v1: "sleep", ru: "спати", v2: "slept", v3: "slept"},
+            {v1: "speak", ru: "розмовляти", v2: "spoke", v3: "spoken"},
+            {v1: "spell", ru: "писати / вимовляти по буквах", v2: "spelled / spelt", v3: "spelled / spelt"}
         ];
 
         let state = {
@@ -385,7 +384,7 @@
             new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['A-B-C (Разные)', 'A-B-B (Две одинаковые)', 'A-A-A (Все одинаковые)'],
+                    labels: ['A-B-C (Різні)', 'A-B-B (Дві однакові)', 'A-A-A (Усі однакові)'],
                     datasets: [{
                         data: [allDifferent, twoSame, allSame],
                         backgroundColor: [
@@ -421,7 +420,7 @@
                                 label: function(context) {
                                     let label = context.label || '';
                                     if (label) label += ': ';
-                                    label += context.parsed + ' глаголов';
+                                    label += context.parsed + ' дієслів';
                                     return label;
                                 }
                             }
@@ -462,7 +461,7 @@
             els.cardV2.textContent = currentVerb.v2;
             els.cardV3.textContent = currentVerb.v3;
             
-            els.progressText.textContent = `Карточка ${state.currentCardIndex + 1} из ${state.practiceQueue.length}`;
+            els.progressText.textContent = `Картка ${state.currentCardIndex + 1} з ${state.practiceQueue.length}`;
         }
 
         document.addEventListener('DOMContentLoaded', initApp);
